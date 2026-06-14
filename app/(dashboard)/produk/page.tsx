@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { analyzeProduct, type ProductAnalysis } from "@/lib/actions/product";
+import { analyzeProduct, saveProduct, type ProductAnalysis } from "@/lib/actions/product";
 
 /**
  * Product Studio — the entry point for affiliate content generation.
@@ -28,6 +28,7 @@ export default function ProductStudioPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [referenceLink, setReferenceLink] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [analysis, setAnalysis] = useState<ProductAnalysis | null>(null);
 
   const handleAutoAnalyze = async () => {
@@ -59,6 +60,35 @@ export default function ProductStudioPage() {
     setImageUrl(null);
     setReferenceLink("");
     setAnalysis(null);
+  };
+
+  const handleSave = async () => {
+    if (!analysis) {
+      toast.error("Belum ada data untuk disimpan");
+      return;
+    }
+    setIsSaving(true);
+    const result = await saveProduct({
+      name: analysis.name,
+      category: analysis.category,
+      brand: analysis.brand,
+      price: analysis.price,
+      target_market: analysis.target_market,
+      usp: analysis.usp,
+      benefits: analysis.benefits,
+      image_url: imageUrl,
+      reference_link: referenceLink || null,
+    });
+    setIsSaving(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.success) {
+      toast.success("Produk berhasil disimpan!");
+      handleReset();
+    }
   };
 
   return (
@@ -256,11 +286,11 @@ export default function ProductStudioPage() {
             </Button>
             <Button
               type="button"
-              onClick={() => toast.info("Simpan produk akan tersedia di Task 12")}
-              disabled={!analysis}
+              onClick={handleSave}
+              disabled={!analysis || isSaving}
               className="h-10 flex-1"
             >
-              Simpan
+              {isSaving ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>
         </section>
