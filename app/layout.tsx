@@ -19,7 +19,10 @@ export default function RootLayout({
       lang="id"
       className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-800">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-slate-50 text-slate-800"
+      >
         {children}
         <Toaster position="top-right" richColors />
       </body>
