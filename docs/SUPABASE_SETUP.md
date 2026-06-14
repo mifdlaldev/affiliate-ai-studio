@@ -256,3 +256,89 @@ to bypass RLS on insert.
 user** — the user_profiles row is missing. Confirm the
 `on_auth_user_created` trigger fired; if not, manually create the
 profile row.
+
+---
+
+## Auth Provider Configuration
+
+The app ships with two sign-in paths wired up in
+`lib/actions/auth.ts` + `app/(auth)/login/page.tsx`:
+
+1. **Email Magic Link** (default, requires no external setup beyond
+   Supabase's default Email provider).
+2. **Google OAuth** (requires a Google Cloud project + redirect URI
+   wiring).
+
+### Email (Magic Link)
+
+1. In Supabase Studio → **Authentication** → **Providers**
+2. **Email** is enabled by default — no further config needed for dev.
+3. Local Supabase: magic links are captured by Inbucket instead of being
+   actually emailed. Open the Inbucket URL printed by
+   `pnpm dlx supabase status` to view them.
+4. Hosted Supabase: emails are delivered via Supabase's built-in SMTP
+   unless you configure a custom SMTP provider.
+
+### Google OAuth
+
+#### 1. Create OAuth credentials in Google Cloud
+
+1. Go to <https://console.cloud.google.com>.
+2. Create a new project (or reuse an existing one).
+3. **APIs & Services** → **Library** → search **Google+ API** → **Enable**.
+   (Supabase requires the legacy Google+ API on; the more modern
+   *Google Identity Services* is also accepted, but enabling Google+ API
+   is the simplest path documented here.)
+4. **APIs & Services** → **Credentials** → **Create Credentials** →
+   **OAuth client ID**:
+   - **Application type**: Web application
+   - **Name**: `AffiliateAI Studio`
+   - **Authorized JavaScript origins**:
+     - `http://localhost:3000` (dev)
+     - `https://<your-production-domain>` (when deployed)
+   - **Authorized redirect URIs**:
+     - `http://localhost:54321/auth/v1/callback` (local Supabase)
+     - `https://<project-ref>.supabase.co/auth/v1/callback` (hosted)
+5. Copy the **Client ID** and **Client Secret** from the dialog.
+
+#### 2. Enable the Google provider in Supabase
+
+1. Supabase Studio → **Authentication** → **Providers** → **Google**.
+2. Toggle **Enabled** on.
+3. Paste the **Client ID** and **Client Secret** from step 1.
+4. Click **Save**.
+
+#### 3. Configure Site URL + Redirect URLs
+
+In Supabase Studio → **Authentication** → **URL Configuration**:
+
+| Setting       | Local dev                       | Production (when deployed)             |
+| ------------- | ------------------------------- | --------------------------------------- |
+| Site URL      | `http://localhost:3000`         | `https://<your-production-domain>`      |
+| Redirect URLs | `http://localhost:3000/api/auth/callback` | `https://<your-domain>/api/auth/callback` |
+
+Add **both** URLs (dev + production) to the Redirect URLs list so the
+same Supabase project supports both environments.
+
+### Testing the Flow
+
+#### Local development
+
+```bash
+pnpm dlx supabase start          # start local stack
+pnpm dev                          # start Next.js on :3000
+```
+
+- **Magic Link**: visit `http://localhost:3000/login`, enter an email,
+  then open the Inbucket URL printed by `supabase status` to read the
+  email and click the link.
+- **Google OAuth**: requires real Google OAuth credentials (the redirect
+  URI for local dev is `http://localhost:54321/auth/v1/callback`). Use a
+  real Google account.
+
+#### Hosted (production)
+
+After deploying, the production Site URL + Redirect URL is used. Magic
+Links are delivered as real emails. Google OAuth uses the same Google
+Cloud credentials as dev — only the redirect URI list needs the
+production host added.
