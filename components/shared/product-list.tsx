@@ -120,6 +120,7 @@ export function ProductList({
         >
           <div className="aspect-square bg-slate-50 overflow-hidden relative">
             {product.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={product.image_url}
                 alt={product.name}

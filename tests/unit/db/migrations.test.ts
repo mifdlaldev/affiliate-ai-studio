@@ -40,7 +40,13 @@ async function bootstrap(db: PGlite) {
 
 async function applyMigrations(db: PGlite) {
   const dir = "supabase/migrations";
-  const files = (await readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
+  const files = (await readdir(dir))
+    .filter((f) => f.endsWith(".sql"))
+    // Storage migration requires the `storage` schema, which is pre-installed
+    // in production Supabase but not in vanilla pglite. It is validated by
+    // `supabase db push` against the real Supabase instance instead.
+    .filter((f) => !f.includes("storage_bucket"))
+    .sort();
   for (const f of files) {
     await db.exec(await readFile(join(dir, f), "utf8"));
   }

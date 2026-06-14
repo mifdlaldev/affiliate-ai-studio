@@ -131,6 +131,7 @@ export default function ProductStudioPage() {
           </h3>
           <div className="flex aspect-square w-full flex-1 flex-col items-center justify-center overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50">
             {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={imageUrl}
                 alt="Pratinjau produk"
