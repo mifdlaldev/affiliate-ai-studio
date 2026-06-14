@@ -47,6 +47,36 @@ export const AI_CONFIG = {
 };
 
 /**
+ * Vision-capable model on OpenCode Zen (free tier, April 2026).
+ *
+ * MiMo-V2.5 is a 310B/15B-active sparse MoE model from Xiaomi with a 729M-param
+ * ViT encoder, supporting native image / video / audio understanding. It
+ * accepts the OpenAI Chat Completions vision format (data URLs or HTTP URLs)
+ * and runs on the same `opencode.ai/zen/v1/chat/completions` endpoint as our
+ * primary text model.
+ *
+ * Replaces the old BLIP-2 / HuggingFace Inference API flow, which was
+ * deprecated in 2024-2025.
+ *
+ * @see https://opencode.ai/docs/zen/#models
+ * @see https://huggingface.co/XiaomiMiMo/MiMo-V2.5
+ */
+export const VISION_MODEL = "mimo-v2.5-free";
+
+/**
+ * Reasoning effort to use for `VISION_MODEL` calls.
+ *
+ * MiMo-V2.5 (via OpenCode Zen) accepts ONLY: `xhigh` | `high` | `medium` |
+ * `low` | `minimal` | `none`. The primary provider's default (`"max"`) is
+ * rejected with a 400 — that value is DeepSeek-V4-Flash-specific.
+ *
+ * `"high"` is a safe middle ground: still does chain-of-thought for visual
+ * reasoning, but stays well within the 1M-token context budget MiMo
+ * advertises. Switch to `"xhigh"` later if extraction quality needs it.
+ */
+export const VISION_REASONING_EFFORT = "high" as const;
+
+/**
  * Resolve the next provider to try after a failure.
  *
  * @param currentName - `name` of the provider that just failed

@@ -28,7 +28,7 @@ Lihat **[Design Spec](docs/superpowers/specs/2026-06-14-affiliate-ai-studio-desi
 - **Font**: Geist Sans + Geist Mono
 - **Backend**: Supabase (Postgres + Auth + Storage)
 - **AI Text**: OpenCode Zen (`deepseek-v4-flash-free`, FREE) — dengan fallback ke DeepSeek paid atau Kimchi.dev
-- **AI Image**: HuggingFace BLIP-2 (image-to-text) + ChatGPT (user external)
+- **AI Vision**: OpenCode Zen (`mimo-v2.5-free` — Xiaomi MiMo-V2.5, FREE, native image input)
 - **Hosting**: Vercel Hobby (free)
 - **Analytics**: Google Analytics 4 + Google Tag Manager
 
@@ -85,8 +85,8 @@ OPENCODE_API_KEY=
 # (Optional) Kimchi.dev - backup provider if OpenCode Zen free model unavailable
 # KIMCHI_API_KEY=
 
-# HuggingFace
-HUGGINGFACE_API_KEY=
+# HuggingFace (no longer needed — vision handled by OpenCode Zen MiMo-V2.5)
+# HUGGINGFACE_API_KEY=
 
 # Google Analytics
 NEXT_PUBLIC_GA_MEASUREMENT_ID=

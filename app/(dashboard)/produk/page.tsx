@@ -21,8 +21,9 @@ import { analyzeProduct, saveProduct, type ProductAnalysis } from "@/lib/actions
  *
  * Auto-Analyze calls the `analyzeProduct` server action, which:
  *   - Enforces the 50/month usage limit
- *   - Calls BLIP-2 for image captioning (if image provided)
- *   - Calls DeepSeek V4 Flash to extract structured product details
+ *   - Sends the uploaded image (data URL) + reference link to
+ *     MiMo-V2.5-Free (vision-capable, free) on OpenCode Zen
+ *   - Calls DeepSeek V4 Flash when only a link is provided (text-only)
  *   - Persists the result to `product_analyses`
  */
 export default function ProductStudioPage() {

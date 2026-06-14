@@ -27,7 +27,7 @@
 | **Auth** | Supabase Auth | latest | Magic Link + Google OAuth |
 | **Storage** | Supabase Storage | latest | For product images, generated assets |
 | **AI Text** | OpenCode Zen `deepseek-v4-flash-free` | OpenAI-compatible | **FREE** via OpenCode Zen, reasoning effort 'max' |
-| **Image-to-Text** | HuggingFace BLIP-2 | free inference | Untuk Product Auto-Analyze |
+| **AI Vision (image-to-text)** | OpenCode Zen `mimo-v2.5-free` (Xiaomi MiMo-V2.5) | OpenAI-compatible vision | **FREE** via OpenCode Zen, native image input (729M ViT encoder) |
 | **PDF Export** | @react-pdf/renderer | latest | Client-side |
 | **DOCX Export** | docx | latest | Client-side |
 | **Hosting** | Vercel | Hobby (free) | Native Next.js |
@@ -72,7 +72,7 @@
 - **Rate limiting** (recommended via Vercel Edge Middleware atau Upstash)
 - **Input validation** client + server (Zod)
 - **No PII in logs** — redact sensitive data
-- **Secrets in env vars only** — `OPENCODE_API_KEY`, `HUGGINGFACE_API_KEY`, `NEXT_PUBLIC_SUPABASE_*` (future: `KIMCHI_API_KEY` if switch to Kimchi)
+- **Secrets in env vars only** — `OPENCODE_API_KEY` (future: `KIMCHI_API_KEY` if switch to Kimchi)
 
 ## 📊 Performance Budget
 

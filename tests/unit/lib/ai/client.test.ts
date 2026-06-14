@@ -1,5 +1,49 @@
-import { describe, it, expect } from "vitest";
-import { AI_CONFIG, getNextProvider } from "@/lib/ai/config";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+/**
+ * Mock the OpenAI SDK at the module level. The OpenAI client only exposes
+ * `post` for the chat completions endpoint in our codebase, so the mock
+ * surface is small. We use a hoisted variable so the `vi.mock` factory can
+ * close over it. The `default` export must be constructable (i.e. a regular
+ * `function`, not an arrow) because `client.ts` evaluates `new OpenAI(...)`
+ * at module load time.
+ */
+const mockPost = vi.hoisted(() => vi.fn());
+
+vi.mock("openai", () => ({
+  default: vi.fn(function () {
+    return { post: mockPost };
+  }),
+}));
+
+import {
+  AI_CONFIG,
+  VISION_MODEL,
+  VISION_REASONING_EFFORT,
+  getNextProvider,
+} from "@/lib/ai/config";
+import { generateText } from "@/lib/ai/client";
+
+function mockChatResponse(content: string, totalTokens = 100) {
+  return {
+    id: "chatcmpl-test",
+    object: "chat.completion",
+    created: 0,
+    model: "test",
+    choices: [
+      {
+        index: 0,
+        message: { role: "assistant", content },
+        finish_reason: "stop",
+      },
+    ],
+    usage: {
+      prompt_tokens: 10,
+      completion_tokens: 10,
+      total_tokens: totalTokens,
+    },
+  };
+}
 
 describe("AI_CONFIG", () => {
   it("has a primary provider configured", () => {
@@ -51,5 +95,125 @@ describe("getNextProvider", () => {
     // attempt recovery rather than silently giving up.
     const next = getNextProvider("Definitely Not A Real Provider");
     expect(next).toBe(AI_CONFIG.fallbacks[0]);
+  });
+});
+
+describe("VISION_MODEL", () => {
+  it("points to the OpenCode Zen free vision model", () => {
+    // If this changes, update AGENTS.md + docs. MiMo-V2.5 is verified to
+    // support native image input (729M-param ViT encoder) and is free on
+    // OpenCode Zen as of April 2026.
+    expect(VISION_MODEL).toBe("mimo-v2.5-free");
+  });
+});
+
+describe("VISION_REASONING_EFFORT", () => {
+  it("is a value MiMo-V2.5 accepts via OpenCode Zen", () => {
+    // MiMo's allowed set: xhigh | high | medium | low | minimal | none.
+    // The primary provider's default "max" is rejected with 400 — guard
+    // against regression by asserting we use a value the model accepts.
+    expect(VISION_REASONING_EFFORT).toBe("high");
+  });
+});
+
+describe("generateText with vision (imageUrl)", () => {
+  beforeEach(() => {
+    mockPost.mockReset();
+  });
+
+  it("sends image_url content part when imageUrl is provided", async () => {
+    mockPost.mockResolvedValueOnce(
+      mockChatResponse('{"name":"Test Product"}'),
+    );
+
+    const result = await generateText({
+      prompt: "Analyze this product",
+      systemPrompt: "You are a product analyst",
+      imageUrl: "data:image/jpeg;base64,QUJD",
+      jsonMode: true,
+      model: VISION_MODEL,
+    });
+
+    expect(result.content).toBe('{"name":"Test Product"}');
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    const [, options] = mockPost.mock.calls[0]!;
+    expect(options).toBeDefined();
+    expect(options.body.model).toBe("mimo-v2.5-free");
+    expect(options.body.response_format).toEqual({ type: "json_object" });
+    const userMsg = options.body.messages.find(
+      (m: { role: string }) => m.role === "user",
+    );
+    expect(Array.isArray(userMsg.content)).toBe(true);
+    expect(userMsg.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "text", text: "Analyze this product" }),
+        expect.objectContaining({
+          type: "image_url",
+          image_url: { url: "data:image/jpeg;base64,QUJD" },
+        }),
+      ]),
+    );
+  });
+
+  it("keeps string content when no imageUrl is provided (regression)", async () => {
+    mockPost.mockResolvedValueOnce(mockChatResponse("ok"));
+
+    await generateText({
+      prompt: "Hello",
+      systemPrompt: "You are helpful",
+    });
+
+    const [, options] = mockPost.mock.calls[0]!;
+    const userMsg = options.body.messages.find(
+      (m: { role: string }) => m.role === "user",
+    );
+    expect(typeof userMsg.content).toBe("string");
+    expect(userMsg.content).toBe("Hello");
+  });
+});
+
+describe("generateText reasoning pass-through", () => {
+  beforeEach(() => {
+    mockPost.mockReset();
+  });
+
+  it("forwards explicit reasoning override to the request body", async () => {
+    mockPost.mockResolvedValueOnce(mockChatResponse("ok"));
+
+    await generateText({
+      prompt: "x",
+      reasoning: "high",
+    });
+
+    const [, options] = mockPost.mock.calls[0]!;
+    expect(options.body.reasoning_effort).toBe("high");
+  });
+
+  it("uses provider default reasoning when none is specified", async () => {
+    mockPost.mockResolvedValueOnce(mockChatResponse("ok"));
+
+    await generateText({ prompt: "x" });
+
+    const [, options] = mockPost.mock.calls[0]!;
+    // Primary provider's default is "max" — DeepSeek-V4-Flash-specific.
+    expect(options.body.reasoning_effort).toBe("max");
+  });
+
+  it("vision call uses VISION_REASONING_EFFORT (not provider default 'max')", async () => {
+    mockPost.mockResolvedValueOnce(
+      mockChatResponse('{"name":"Test Product"}'),
+    );
+
+    await generateText({
+      prompt: "Analyze this product",
+      imageUrl: "data:image/jpeg;base64,QUJD",
+      jsonMode: true,
+      model: VISION_MODEL,
+      reasoning: VISION_REASONING_EFFORT,
+    });
+
+    const [, options] = mockPost.mock.calls[0]!;
+    expect(options.body.model).toBe("mimo-v2.5-free");
+    expect(options.body.reasoning_effort).toBe(VISION_REASONING_EFFORT);
   });
 });

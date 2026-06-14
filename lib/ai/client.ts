@@ -19,6 +19,15 @@ export const aiClient = new OpenAI({
   baseURL: AI_CONFIG.primary.baseURL,
 });
 
+/**
+ * Content part for vision requests. Mirrors the OpenAI Chat Completions
+ * vision schema — `text` parts carry the prompt, `image_url` parts carry
+ * the image (as a data URL or HTTP URL).
+ */
+export type MessageContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
 export interface GenerateOptions {
   prompt: string;
   systemPrompt?: string;
@@ -30,6 +39,14 @@ export interface GenerateOptions {
   jsonMode?: boolean;
   /** Use a specific provider (defaults to primary). */
   provider?: AIProviderConfig;
+  /**
+   * Image to send for vision-capable models (data URL or HTTP URL).
+   * When set, the user message becomes a multi-part content array
+   * (text + image_url) following the OpenAI vision schema. The caller
+   * is responsible for picking a vision-capable model (see
+   * `VISION_MODEL` in `./config`).
+   */
+  imageUrl?: string;
 }
 
 export interface GenerateResult {
@@ -41,7 +58,7 @@ export interface GenerateResult {
 
 interface ChatMessage {
   role: "system" | "user";
-  content: string;
+  content: string | MessageContentPart[];
 }
 
 /**
@@ -68,7 +85,20 @@ function buildRequestBody(
   if (options.systemPrompt) {
     messages.push({ role: "system", content: options.systemPrompt });
   }
-  messages.push({ role: "user", content: options.prompt });
+
+  if (options.imageUrl) {
+    const parts: MessageContentPart[] = [];
+    if (options.prompt) {
+      parts.push({ type: "text", text: options.prompt });
+    }
+    parts.push({
+      type: "image_url",
+      image_url: { url: options.imageUrl },
+    });
+    messages.push({ role: "user", content: parts });
+  } else {
+    messages.push({ role: "user", content: options.prompt });
+  }
 
   const body: ChatCompletionRequestBody = {
     model: options.model ?? provider.model,
@@ -93,6 +123,9 @@ function buildRequestBody(
  * Honors per-call `model` / `reasoning` / `jsonMode` overrides, and falls
  * back to the provider's defaults. Use the `provider` option to explicitly
  * target a fallback (e.g. when the primary has rate-limited you).
+ *
+ * For image analysis, pass `imageUrl` (data URL or HTTP URL) together with
+ * `model: VISION_MODEL` — the request will be sent as a vision message.
  */
 export async function generateText(
   options: GenerateOptions,

@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/client";
+import { VISION_MODEL, VISION_REASONING_EFFORT } from "@/lib/ai/config";
+import { extractJson } from "@/lib/ai/json";
 import { checkAndIncrementUsage } from "@/lib/usage/limits";
-import { analyzeImage } from "@/lib/image-analysis/blip";
 import {
   buildProductAnalyzePrompt,
   PRODUCT_ANALYZE_SYSTEM_PROMPT,
@@ -42,11 +43,11 @@ type SourceType = "image" | "link" | "both";
  * Run the full Product Auto-Analyze pipeline for the signed-in user:
  *
  *   1. Check the user's monthly usage limit (atomic via Postgres RPC).
- *   2. If an image was uploaded, ask BLIP-2 for a text description
- *      (non-fatal — a failed image analysis just yields empty context).
- *   3. Hand the description + reference link to DeepSeek V4 Flash via
- *      `lib/ai/client.ts` and ask for a structured JSON ProductAnalysis.
- *   4. Persist the result to `product_analyses` (non-fatal — the user
+ *   2. Send the image (data URL) + reference link to MiMo-V2.5-Free
+ *      (vision-capable model on OpenCode Zen) via `lib/ai/client.ts`
+ *      and ask for a structured JSON ProductAnalysis. If no image is
+ *      provided, the text-only DeepSeek V4 Flash model is used.
+ *   3. Persist the result to `product_analyses` (non-fatal — the user
  *      still gets their result even if the insert fails).
  *
  * The function never throws — all failure paths return an
@@ -73,37 +74,37 @@ export async function analyzeProduct(
       };
     }
 
-    // 2. Image caption via BLIP-2 (non-fatal — empty fallback is fine).
-    let imageDescription = "";
-    if (imageUrl) {
-      try {
-        imageDescription = await analyzeImage(imageUrl);
-      } catch (err) {
-        // Non-fatal: continue with empty description so the user still
-        // gets a result based on the reference link alone.
-        console.warn("BLIP-2 image analysis failed:", err);
-      }
-    }
-
-    // 3. Build prompt and call AI with JSON mode enforced.
-    const prompt = buildProductAnalyzePrompt(imageDescription, referenceLink);
+    // 2. Build prompt and call the model. Vision-capable model is used
+    //    when an image is provided; otherwise the text-only primary
+    //    (DeepSeek V4 Flash Free) is used. The vision call also pins
+    //    `reasoning` to a value MiMo accepts (primary's default `"max"`
+    //    is rejected with 400 by the Xiaomi provider).
+    const prompt = buildProductAnalyzePrompt({ imageUrl, linkContext: referenceLink });
     const result = await generateText({
       systemPrompt: PRODUCT_ANALYZE_SYSTEM_PROMPT,
       prompt,
       jsonMode: true,
+      ...(imageUrl
+        ? {
+            model: VISION_MODEL,
+            imageUrl,
+            reasoning: VISION_REASONING_EFFORT,
+          }
+        : {}),
     });
 
-    // 4. Parse JSON response. AI is instructed to return JSON only, but
-    //    defensive parse keeps a single bad response from killing the UX.
+    // 3. Parse JSON response. AI is instructed to return JSON only, but
+    //    models like MiMo-V2.5 (with reasoning_effort: "high") often wrap
+    //    the answer in a markdown code block. `extractJson` handles that.
     let analysis: ProductAnalysis;
     try {
-      analysis = JSON.parse(result.content) as ProductAnalysis;
-    } catch {
-      console.error("Failed to parse AI response:", result.content);
+      analysis = extractJson<ProductAnalysis>(result.content);
+    } catch (parseErr) {
+      console.error("Failed to parse AI response:", result.content, parseErr);
       return { error: "AI response tidak valid. Coba lagi." };
     }
 
-    // 5. Persist to product_analyses (non-fatal — the user keeps the
+    // 4. Persist to product_analyses (non-fatal — the user keeps the
     //    in-memory result either way).
     const sourceType: SourceType =
       imageUrl && referenceLink ? "both" : imageUrl ? "image" : "link";
