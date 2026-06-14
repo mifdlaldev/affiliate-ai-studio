@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Local env files
+.env*.local
+.env.local
+
+# Vercel
+.vercel
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test coverage
+coverage/
+*.lcov
+
+# Playwright
+/playwright-report/
+/playwright/.cache/
+/test-results/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Misc
+*.pem
+.vercel
+.turbo
