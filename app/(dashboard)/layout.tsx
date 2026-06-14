@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/shared/dashboard-shell";
+import { OnboardingWrapper } from "@/components/shared/onboarding-wrapper";
 
 /**
  * Protected route group layout. Verifies a Supabase session server-side
  * and redirects unauthenticated users to `/login` before any shell UI
  * is rendered. The shell itself is a client component so it can own
  * sidebar collapse state.
+ *
+ * The layout is also responsible for deciding whether the first-run
+ * onboarding modal should appear. It reads `onboarding_completed` from
+ * `user_profiles` and passes the boolean down to `OnboardingWrapper`,
+ * which is a client component that owns the modal lifecycle.
  */
 export default async function DashboardLayout({
   children,
@@ -31,7 +37,14 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  const showOnboarding = !profile?.onboarding_completed;
+
   return (
-    <DashboardShell user={user} profile={profile}>{children}</DashboardShell>
+    <>
+      <DashboardShell user={user} profile={profile}>
+        {children}
+      </DashboardShell>
+      <OnboardingWrapper showOnboarding={showOnboarding} />
+    </>
   );
 }
