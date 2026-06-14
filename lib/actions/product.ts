@@ -216,3 +216,51 @@ export async function saveProduct(
     };
   }
 }
+
+export type DeleteProductResult = {
+  success?: boolean;
+  error?: string;
+};
+
+/**
+ * Delete a product owned by the signed-in user. RLS already enforces
+ * `user_id = auth.uid()`, so a row that doesn't belong to the caller
+ * simply won't be matched — we still pass `.eq("user_id", user.id)`
+ * for defense-in-depth so the query is explicit about ownership.
+ *
+ * Never throws — returns `{ error: string }` on every failure path
+ * so the client can toast the user.
+ */
+export async function deleteProduct(
+  productId: string
+): Promise<DeleteProductResult> {
+  try {
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: "Anda harus login terlebih dahulu" };
+    }
+
+    // RLS will enforce user_id check, but we add explicit filter for safety
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", productId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("deleteProduct error:", error);
+      return { error: `Gagal menghapus: ${error.message}` };
+    }
+
+    revalidatePath("/produk");
+    return { success: true };
+  } catch (err) {
+    console.error("deleteProduct unexpected error:", err);
+    return {
+      error: err instanceof Error ? err.message : "Gagal menghapus produk",
+    };
+  }
+}

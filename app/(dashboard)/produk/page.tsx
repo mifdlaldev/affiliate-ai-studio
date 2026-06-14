@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Package, Sparkle } from "@phosphor-icons/react/dist/ssr";
 import { ProductUploader } from "@/components/shared/product-uploader";
+import { ProductList } from "@/components/shared/product-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ export default function ProductStudioPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [analysis, setAnalysis] = useState<ProductAnalysis | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAutoAnalyze = async () => {
     if (!imageUrl && !referenceLink) {
@@ -87,6 +89,7 @@ export default function ProductStudioPage() {
     }
     if (result.success) {
       toast.success("Produk berhasil disimpan!");
+      setRefreshKey((prev) => prev + 1);
       handleReset();
     }
   };
@@ -294,6 +297,21 @@ export default function ProductStudioPage() {
             </Button>
           </div>
         </section>
+      </div>
+
+      <div className="mt-10">
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Produk Tersimpan</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Daftar produk yang sudah Anda simpan.
+            </p>
+          </div>
+        </div>
+        <ProductList
+          refreshKey={refreshKey}
+          onProductDeleted={() => setRefreshKey((prev) => prev + 1)}
+        />
       </div>
     </div>
   );
