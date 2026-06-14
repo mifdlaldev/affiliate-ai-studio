@@ -11,11 +11,12 @@
 | **Status** | 🟢 Plan 1 Complete (Foundation & Product Studio shipped) |
 | **Started** | 2026-06-14 |
 | **Plan 1 Completed** | 2026-06-14 |
-| **Production URL** | TBD (deploy via `docs/DEPLOYMENT.md`) |
+| **Production URL** | TBD (deploy deferred per user request) |
 | **Target Completion** | 2026-08-09 (8 weeks) |
 | **Buffer** | +2 weeks (2026-08-23) |
 | **Owner** | User (client) |
-| **Repo** | TBD (push to GitHub first) |
+| **Repo** | https://github.com/mifdlaldev/affiliate-ai-studio |
+| **Supabase Project** | `affiliate-ai-studio` (ref: `pdmcobvoabsrrqarayxs`, Singapore region) — 8 migrations + storage bucket applied |
 
 ## 🎯 What is it?
 
