@@ -8,13 +8,14 @@
 |---|---|
 | **Project Name** | AffiliateAI Studio |
 | **Type** | SaaS Web Application |
-| **Status** | 🟡 Planning (design approved, ready for implementation) |
+| **Status** | 🟢 Plan 1 Complete (Foundation & Product Studio shipped) |
 | **Started** | 2026-06-14 |
+| **Plan 1 Completed** | 2026-06-14 |
+| **Production URL** | TBD (deploy via `docs/DEPLOYMENT.md`) |
 | **Target Completion** | 2026-08-09 (8 weeks) |
 | **Buffer** | +2 weeks (2026-08-23) |
 | **Owner** | User (client) |
-| **Repo** | TBD |
-| **Production URL** | TBD |
+| **Repo** | TBD (push to GitHub first) |
 
 ## 🎯 What is it?
 
@@ -57,7 +58,7 @@ Lihat `AGENTS.md` untuk detail lengkap. Singkatnya:
 | Phase | Week | Status | Deliverables |
 |---|---|---|---|
 | **Brainstorming + Design** | 0 (Jun 14) | ✅ Done | Design spec approved |
-| **Phase 1: Foundation** | 1-2 (Jun 15-28) | 🔴 Pending | Setup, Auth, DB, Dashboard, Product Studio |
+| **Phase 1: Foundation** | 1-2 (Jun 15-28) | ✅ Done | Setup, Auth, DB, Dashboard, Product Studio |
 | **Phase 2: Core AI** | 2-3 (Jun 29-Jul 12) | 🔴 Pending | Photo/Model Prompt, UGC, Storyboard |
 | **Phase 3: Strategy** | 3-4 (Jul 13-26) | 🔴 Pending | Competitor, Batch, Calendar, Live Host |
 | **Phase 4: Platform** | 4-5 (Jul 27-Aug 9) | 🔴 Pending | Marketplace, Social, Landing |
@@ -103,14 +104,47 @@ Lihat `AGENTS.md` untuk detail lengkap. Singkatnya:
 ## 📝 Changelog
 
 - **2026-06-14**: Project init. Brainstorming + design spec approved. Ready for implementation.
+- **2026-06-14**: Plan 1 complete. Foundation + Product Studio shipped. See "Plan 1 Complete" below.
+- **2026-06-14**: Deployment guide, post-plan-1 next steps, and CI workflow added. Ready for user to deploy.
+
+## ✅ Plan 1 Complete (2026-06-14)
+
+**Delivered**:
+
+- ✅ Next.js 16 + TypeScript strict + Tailwind v4 + shadcn/ui
+- ✅ Supabase (Auth + DB + Storage) with 7 tables + RLS
+- ✅ Magic Link + Google OAuth login flow
+- ✅ Dashboard layout (sidebar + top bar + responsive)
+- ✅ Product Studio with AI auto-analyze (BLIP-2 + DeepSeek V4 Flash)
+- ✅ Product form + save + list view
+- ✅ Onboarding flow with sample data opt-in
+- ✅ Soft usage limits (50 generations/month)
+- ✅ 41 unit tests + 8 E2E tests passing
+- ✅ Production deployment guide + CI workflow
+
+**Files**: ~60 source files, ~5,500 lines of TypeScript
+
+**Verification (final run, 2026-06-14)**:
+
+- `pnpm typecheck` -> 0 errors
+- `pnpm lint` -> 0 errors (3 pre-existing `<img>` warnings tracked)
+- `pnpm build` -> success (Next.js 16 `middleware` -> `proxy` deprecation noted)
+- `pnpm test` -> 41/41 tests pass
+- `pnpm test:e2e --list` -> 8/8 tests listed
+
+**Ready for**: Plan 2 (AI Generators Suite)
+
+See `docs/DEPLOYMENT.md` for production setup and
+`docs/POST_PLAN_1_NEXT_STEPS.md` for what's next.
 
 ## 🚀 Next Steps
 
-1. **Setup project** (Next.js 16 init, Supabase project, pnpm install)
-2. **Phase 1 deliverables**: Auth, DB schema, dashboard layout, Product Studio
-3. **Iteration**: Per phase, deliver → review → adjust
+1. **Push to GitHub** (per `docs/DEPLOYMENT.md` Step 1)
+2. **Deploy to Vercel** (per `docs/DEPLOYMENT.md` Step 4)
+3. **Plan 2**: AI Generators Suite (12 modules) — see
+   `docs/POST_PLAN_1_NEXT_STEPS.md`
 
 ---
 
 **Maintained by**: User (solo developer)
-**Last updated**: 2026-06-14
+**Last updated**: 2026-06-14 (Plan 1 complete)
