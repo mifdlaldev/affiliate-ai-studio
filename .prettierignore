@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Test coverage
+coverage
+*.lcov
+
+# Playwright
+/playwright-report/
+/playwright/.cache/
+/test-results/
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated types
+next-env.d.ts
+
+# Local config
+.env*.local
+.env.local
+
+# Internal tooling
+.omo
+
+# Project documentation (manually maintained, do not auto-format)
+AGENTS.md
+PROJECT.md
+DESIGN.md
+README.md
+docs/
