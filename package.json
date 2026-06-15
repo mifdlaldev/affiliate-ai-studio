@@ -48,6 +48,7 @@
     "@vitest/ui": "^4.1.8",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "happy-dom": "^20.10.3",
     "prettier": "^3.8.4",
     "supabase": "^2.106.0",
     "tailwindcss": "^4",
