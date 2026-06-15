@@ -7,14 +7,27 @@ import { createBrowserClient } from "@/lib/supabase/client";
 import { deleteProduct } from "@/lib/actions/product";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "./empty-state";
+import { ProductDetailModal, type ProductWithDetails } from "./product-detail-modal";
 
 interface Product {
   id: string;
   name: string;
   category: string | null;
   brand: string | null;
+  price: string | null;
+  target_market: string | null;
+  usp: string | null;
+  benefits: string | null;
   image_url: string | null;
   created_at: string;
+  /**
+   * The three fields below exist on the row so it can be passed to
+   * `<ProductDetailModal product={...} />` (whose `ProductWithDetails`
+   * type is the full DB row). The card UI itself does not render them.
+   */
+  reference_link: string | null;
+  updated_at: string;
+  user_id: string;
 }
 
 interface ProductListProps {
@@ -43,6 +56,7 @@ export function ProductList({
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithDetails | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -54,7 +68,7 @@ export function ProductList({
       const supabase = createBrowserClient();
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, category, brand, image_url, created_at")
+        .select("id, name, category, brand, price, target_market, usp, benefits, image_url, reference_link, created_at, updated_at, user_id")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -116,7 +130,17 @@ export function ProductList({
       {products.map((product) => (
         <div
           key={product.id}
-          className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow group"
+          onClick={() => setSelectedProduct(product)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setSelectedProduct(product);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Lihat detail ${product.name}`}
+          className="bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
         >
           <div className="aspect-square bg-slate-50 overflow-hidden relative">
             {product.image_url ? (
@@ -153,7 +177,10 @@ export function ProductList({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleDelete(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(product);
+              }}
               disabled={deletingId === product.id}
               className="w-full text-xs"
             >
@@ -172,6 +199,11 @@ export function ProductList({
           </div>
         </div>
       ))}
+      <ProductDetailModal
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onOpenChange={(open) => !open && setSelectedProduct(null)}
+      />
     </div>
   );
 }
