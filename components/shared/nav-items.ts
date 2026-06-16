@@ -1,6 +1,7 @@
 import {
   Package,
   Sparkle,
+  ChatCircleDots,
   UsersThree,
   FilmSlate,
   Broadcast,
