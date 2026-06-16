@@ -25,7 +25,7 @@ export interface NavItem {
  */
 export const navItems: readonly NavItem[] = [
   { href: "/produk", label: "Product Studio", icon: Package },
-  { href: "/generator", label: "AI Generator", icon: Sparkle },
+  { href: "/generasikan/hook", label: "Hook Generator", icon: Sparkle },
   { href: "/ugc", label: "UGC Generator", icon: UsersThree },
   { href: "/storyboard", label: "Storyboard", icon: FilmSlate },
   { href: "/live-host", label: "Live Host", icon: Broadcast },
