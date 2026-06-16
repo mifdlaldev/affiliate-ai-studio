@@ -233,6 +233,7 @@ export function AssetLibrary() {
   // The data fetching effect. The function is defined inside the effect
   // so React's lint rules recognise it as effect-local; we also depend
   // on `retryCount` so the "Coba lagi" button can re-trigger the load.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     let cancelled = false;
 
