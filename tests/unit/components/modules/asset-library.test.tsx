@@ -202,4 +202,59 @@ describe("AssetLibrary", () => {
       await screen.findByTestId("asset-detail-json"),
     ).toBeInTheDocument();
   });
+
+  it("renders an Export button on every asset card", async () => {
+    render(<AssetLibrary />);
+
+    await screen.findByText(/3 rahasia skincare/i);
+
+    const exportButtons = screen.getAllByRole("button", {
+      name: /^export$/i,
+    });
+    expect(exportButtons).toHaveLength(SAMPLE_ASSETS.length);
+  });
+
+  it("triggers a TXT download when 'Download TXT' is selected from the export menu", async () => {
+    // Stub the download APIs so the test can assert without actually
+    // downloading. Replacing the anchor's `click` keeps happy-dom from
+    // attempting a real navigation.
+    const createObjectURLSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:fake-url");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+
+    const anchorClickSpy = vi.fn();
+    const originalCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation(
+      ((tag: string) => {
+        const el = originalCreateElement(tag) as HTMLElement;
+        if (tag === "a") {
+          (el as HTMLAnchorElement).click =
+            anchorClickSpy as unknown as HTMLAnchorElement["click"];
+        }
+        return el;
+      }) as typeof document.createElement,
+    );
+
+    render(<AssetLibrary />);
+
+    await screen.findByText(/3 rahasia skincare/i);
+    const exportButtons = screen.getAllByRole("button", {
+      name: /^export$/i,
+    });
+    fireEvent.click(exportButtons[0]);
+
+    const downloadTxt = await screen.findByRole("menuitem", {
+      name: /download txt/i,
+    });
+    fireEvent.click(downloadTxt);
+
+    expect(createObjectURLSpy).toHaveBeenCalled();
+    const blob = createObjectURLSpy.mock.calls[0]?.[0] as Blob;
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe("text/plain");
+    expect(anchorClickSpy).toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
 });

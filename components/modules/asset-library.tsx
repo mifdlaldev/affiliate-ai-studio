@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import {
   ArrowClockwise,
   CalendarBlank,
   ChatCircleDots,
+  DownloadSimple,
   ImageSquare,
   MagnifyingGlass,
   Sparkle,
@@ -37,6 +38,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
+import { downloadFile } from "@/lib/export/download";
+import { exportAsJson } from "@/lib/export/json";
+import { exportAsTxt } from "@/lib/export/txt";
 import { cn } from "@/lib/utils";
 
 /**
@@ -452,52 +456,166 @@ interface AssetCardProps {
 }
 
 /**
- * One tile in the asset grid. Renders the module icon, a colour-coded
- * badge, a short preview of the content, and the relative date. The
- * entire card is a button so keyboard users can activate it with
- * Enter / Space.
+ * Format a date as a compact filename-friendly token (e.g. "2026-06-14").
+ */
+function formatDateForFilename(iso: string): string {
+  const date = new Date(iso);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * One tile in the asset grid. The tile is a `<div>` (not a button) so
+ * the inner content button and the export dropdown can both be real
+ * interactive children without nesting buttons — which the HTML spec
+ * disallows.
  */
 function AssetCard({ asset, onClick }: AssetCardProps) {
   const tab = getModuleTab(asset.module);
   const preview = clipPreview(asset.previewText);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Lihat detail ${tab.label}: ${preview}`}
+    <div
       className={cn(
-        "group block w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all",
+        "group relative block w-full rounded-xl border border-slate-200 bg-white text-left shadow-sm transition-all",
         "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
-        "active:scale-[0.99]",
+        "focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2",
       )}
     >
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div
-          className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-lg",
-            tab.iconClass,
-          )}
-        >
-          <tab.icon size={18} weight="duotone" aria-hidden="true" />
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`Lihat detail ${tab.label}: ${preview}`}
+        className="block w-full rounded-xl p-4 text-left active:scale-[0.99]"
+      >
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-lg",
+              tab.iconClass,
+            )}
+          >
+            <tab.icon size={18} weight="duotone" aria-hidden="true" />
+          </div>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+              tab.badgeClass,
+            )}
+          >
+            {tab.label}
+          </span>
         </div>
-        <span
-          className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-            tab.badgeClass,
-          )}
+        <p className="line-clamp-3 text-sm leading-relaxed text-slate-700">
+          {preview}
+        </p>
+        <p className="mt-3 text-xs font-medium text-slate-400">
+          {formatRelativeDate(asset.createdAt)}
+        </p>
+      </button>
+      <ExportMenu asset={asset} />
+    </div>
+  );
+}
+
+interface ExportMenuProps {
+  asset: Asset;
+}
+
+/**
+ * Small dropdown anchored to the top-right of the asset card. Toggling
+ * the trigger reveals "Download TXT" and "Download JSON" menu items;
+ * selecting either triggers a browser download via the shared
+ * `downloadFile` helper, then closes the menu. A click-outside
+ * listener dismisses the menu without firing the card's detail-view
+ * handler.
+ */
+function ExportMenu({ asset }: ExportMenuProps) {
+  const [open, setOpen] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  const dateToken = formatDateForFilename(asset.createdAt);
+
+  const handleDownloadTxt = () => {
+    downloadFile(
+      exportAsTxt(asset),
+      `${asset.module}-${dateToken}.txt`,
+      "text/plain",
+    );
+    setOpen(false);
+  };
+
+  const handleDownloadJson = () => {
+    downloadFile(
+      exportAsJson(asset),
+      `${asset.module}-${dateToken}.json`,
+      "application/json",
+    );
+    setOpen(false);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="absolute right-2 top-2"
+      data-testid="export-menu"
+    >
+      <button
+        type="button"
+        aria-label="Export"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        className={cn(
+          "inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors",
+          "hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1",
+          open && "border-slate-300 bg-slate-50 text-slate-700",
+        )}
+      >
+        <DownloadSimple size={14} weight="bold" aria-hidden="true" />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Export options"
+          className="absolute right-0 top-full z-10 mt-1 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
         >
-          {tab.label}
-        </span>
-      </div>
-      <p className="line-clamp-3 text-sm leading-relaxed text-slate-700">
-        {preview}
-      </p>
-      <p className="mt-3 text-xs font-medium text-slate-400">
-        {formatRelativeDate(asset.createdAt)}
-      </p>
-    </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleDownloadTxt}
+            className="block w-full rounded px-2.5 py-1.5 text-left text-xs text-slate-700 transition-colors hover:bg-slate-100 focus-visible:bg-slate-100 focus-visible:outline-none"
+          >
+            Download TXT
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleDownloadJson}
+            className="block w-full rounded px-2.5 py-1.5 text-left text-xs text-slate-700 transition-colors hover:bg-slate-100 focus-visible:bg-slate-100 focus-visible:outline-none"
+          >
+            Download JSON
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
