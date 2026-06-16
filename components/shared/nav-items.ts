@@ -12,6 +12,7 @@ import {
   Folders,
   VideoCamera,
   ImageSquare,
+  UserCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react/dist/lib/types";
 
@@ -32,6 +33,7 @@ export const navItems: readonly NavItem[] = [
   { href: "/generasikan/caption", label: "Caption Generator", icon: ChatCircleDots },
   { href: "/generasikan/script", label: "Script Generator", icon: VideoCamera },
   { href: "/generasikan/photo", label: "Photo Prompt", icon: ImageSquare },
+  { href: "/generasikan/model", label: "Model Prompt", icon: UserCircle },
   { href: "/ugc", label: "UGC Generator", icon: UsersThree },
   { href: "/storyboard", label: "Storyboard", icon: FilmSlate },
   { href: "/live-host", label: "Live Host", icon: Broadcast },
